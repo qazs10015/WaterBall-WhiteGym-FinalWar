@@ -87,7 +87,62 @@ export class Map {
     }
 
     RemoveMapObj(mapObj: MapObj) {
+        // 從相應的陣列中移除物件
+        if (mapObj instanceof Monster) {
+            const index = this.Monster.indexOf(mapObj);
+            if (index > -1) {
+                this.Monster.splice(index, 1);
+            }
+        } else if (mapObj instanceof Treasure) {
+            const index = this.Treasure.indexOf(mapObj);
+            if (index > -1) {
+                this.Treasure.splice(index, 1);
+            }
+        } else {
+            // 處理障礙物
+            const index = this.Obstacle.indexOf(mapObj);
+            if (index > -1) {
+                this.Obstacle.splice(index, 1);
+            }
+        }
+    }
 
+    /**
+     * 執行所有怪物的回合
+     */
+    executeMonsterTurns(): void {
+        if (!this.character) return;
+
+        console.log("=== 怪物回合開始 ===");
+
+        // 為每個怪物執行行動，使用倒序遍歷避免陣列修改問題
+        for (let i = this.Monster.length - 1; i >= 0; i--) {
+            const monster = this.Monster[i];
+            if (monster.HP > 0) {
+                monster.performAction(this, this.character);
+            } else {
+                // 移除死亡的怪物
+                this.Monster.splice(i, 1);
+                console.log(`怪物在 (${monster.x}, ${monster.y}) 已死亡，從地圖上移除`);
+            }
+        }
+
+        console.log("=== 怪物回合結束 ===");
+    }
+
+    /**
+     * 檢查遊戲是否結束
+     */
+    isGameOver(): { isOver: boolean, reason: string } {
+        if (!this.character || this.character.HP <= 0) {
+            return { isOver: true, reason: "主角死亡，遊戲結束！" };
+        }
+
+        if (this.Monster.length === 0) {
+            return { isOver: true, reason: "所有怪物已被消滅，恭喜獲勝！" };
+        }
+
+        return { isOver: false, reason: "" };
     }
 
     // 判斷是否到達地圖邊界
