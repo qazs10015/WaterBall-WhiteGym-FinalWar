@@ -1,6 +1,7 @@
 import * as readline from "readline";
-import { Game } from "./class/Game";
-import { Direction } from "./enum/Direction";
+import { Hero } from "./class/Hero";
+import { RPG } from "./class/RPG";
+import { AI } from "./interface/AI";
 
 const rl = readline.createInterface({
     input: process.stdin,
@@ -15,113 +16,94 @@ function askQuestion<T>(query: string): Promise<T> {
 }
 
 async function main() {
-    console.log("🎮 歡迎來到二維地圖冒險遊戲！");
-    console.log("目標：消滅所有怪物並保持生存！\n");
 
-    const game = new Game();
-    game.GameStart();
+    const rpg = new RPG();
 
-    if (!game.map || !game.map.character) {
-        console.log("❌ 遊戲初始化失敗");
-        rl.close();
-        return;
-    }
+    console.log(rpg.startGame());
 
-    // 主遊戲循環
-    while (true) {
-        // 主角回合開始處理
-        if (game.map.character.onTurnStart) {
-            game.map.character.onTurnStart();
-        }
+    // 開始遊戲
+    // 隊伍 1 先開始
+    // 目前角色順序編號
+    let roleOrderIdx = 0;
+    const currentTeam = rpg.teams[rpg.round - 1 % 2 ? 1 : 0]; // 主隊伍
+    const enemyTeam = rpg.teams[rpg.round - 1 % 2 ? 0 : 1]; // 敵對隊伍
 
-        // 顯示當前遊戲狀態
-        console.log("\n" + "=".repeat(50));
-        console.log(`🦸 主角血量: ${game.map.character.HP}/${game.map.character.maxHP || 300}`);
-        console.log(`🎯 剩餘怪物: ${game.map.Monster.length}`);
-        console.log(`📍 主角位置: (${game.map.character.x}, ${game.map.character.y})`);
-        console.log(`👁️  面向方向: ${getDirectionName(game.map.character.direction)}`);
-        if (game.map.character.getStateName) {
-            console.log(`✨ 當前狀態: ${game.map.character.getStateName()}${game.map.character.state.duration > 0 ? ` (剩餘${game.map.character.state.duration}回合)` : ''}`);
-        }
-        console.log("=".repeat(50));
+    const memberCount = currentTeam?.getAliveTeamMember().length || 0;
+    const aliveMembers = currentTeam?.getAliveTeamMember() || [];
 
-        // 顯示地圖
-        game.map.UpdateMapInfo(game.map.size);
+    // console.log(currentTeam);
 
-        // 檢查遊戲是否結束
-        const gameStatus = game.map.isGameOver();
-        if (gameStatus.isOver) {
-            console.log("\n🎯 " + gameStatus.reason);
-            break;
-        }
+    while (!rpg.isEndGame()) {
+        const role = aliveMembers[roleOrderIdx]; // 直接使用索引取得角色
 
-        // 玩家選擇動作
-        const action = await askQuestion<string>('\n請選擇動作:\n1: 向上移動\n2: 向下移動\n3: 向左移動\n4: 向右移動\n5: 攻擊\n6: 退出遊戲\n請輸入選擇 (1-6): ');
+        // 輪到 <角色名稱> (HP: <HP>, MP: <MP>, STR: <STR>, State: <狀態>)。
+        console.log(`輪到 ${role?.name} (HP: ${role?.hp}, MP: ${role?.mp}, STR: ${role?.str}, State: ${role?.roleState.name})。`);
 
-        // 處理玩家動作
-        let actionSuccess = false;
-        if (game.map?.character) {
-            switch (action.trim()) {
-                case '1':
-                    console.log('\n向上移動...');
-                    actionSuccess = game.map.character.moveCharacter(Direction.Up, game.map);
-                    break;
-                case '2':
-                    console.log('\n向下移動...');
-                    actionSuccess = game.map.character.moveCharacter(Direction.Down, game.map);
-                    break;
-                case '3':
-                    console.log('\n向左移動...');
-                    actionSuccess = game.map.character.moveCharacter(Direction.Left, game.map);
-                    break;
-                case '4':
-                    console.log('\n向右移動...');
-                    actionSuccess = game.map.character.moveCharacter(Direction.Right, game.map);
-                    break;
-                case '5':
-                    console.log('\n執行攻擊...');
-                    game.map.character.Attack(game.map);
-                    actionSuccess = true; // 攻擊總是可以執行
-                    break;
-                case '6':
-                    console.log('\n結束遊戲！');
-                    rl.close();
-                    return;
-                default:
-                    console.log('\n❌ 無效輸入，請輸入 1-6 之間的數字');
-                    continue;
+        // S1
+        role?.nextPhase();
+
+        // 英雄的選擇行為
+        if (role instanceof Hero) {
+            const skillIdx = await askQuestion<string>(`選擇行動:${role.skill.map((item, idx) => `(${idx}) <${item.name}>`).join(" ")}`);
+            const targetCount = role.skill[parseInt(skillIdx)]?.targetCount || 0;
+            const pickedAction = role.skill[parseInt(skillIdx)];
+
+            // S2
+            role?.nextPhase();
+
+            const selectedTarget = await askQuestion<string>(`選擇 ${targetCount} 位目標: ${enemyTeam.getAliveTeamMember().map((member, idx) => `(${idx}) <${member.name}>`)}`);
+
+            const pickedEnemyIdxList = selectedTarget.split(' ').map(numStr => parseInt(numStr)).filter(num => !isNaN(num));
+
+            // targetCount > 0 才需要指定
+            if (targetCount > 0) {
+                // 驗證輸入並重試直到正確
+                const maxValidIndex = enemyTeam.getAliveTeamMember().length - 1;
+
+                // 檢查輸入是否合法（數量和範圍都要正確）
+                function isValidInput(list: number[]): boolean {
+                    return list.length === targetCount &&
+                        list.every(idx => idx >= 0 && idx <= maxValidIndex);
+                }
+
+                while (!isValidInput(pickedEnemyIdxList)) {
+                    const invalidIndex = pickedEnemyIdxList.findIndex(item => item > maxValidIndex || item < 0);
+
+                    // 根據不同的錯誤情況顯示對應的錯誤訊息
+                    if (invalidIndex !== -1) {
+                        console.log(`❌ 目標編號必須在 0 到 ${maxValidIndex} 之間，你輸入了 ${pickedEnemyIdxList[invalidIndex]}`);
+                    } else if (pickedEnemyIdxList.length < targetCount) {
+                        console.log(`❌ 你需要選擇 ${targetCount} 位目標，但只選了 ${pickedEnemyIdxList.length} 位`);
+                    } else if (pickedEnemyIdxList.length > targetCount) {
+                        console.log(`❌ 你只能選擇 ${targetCount} 位目標，但選了 ${pickedEnemyIdxList.length} 位`);
+                    }
+
+                    const retry = await askQuestion<string>(
+                        `請重新選擇 ${targetCount} 位目標: ${enemyTeam.getAliveTeamMember().map((m, i) => `(${i}) <${m.name}>`).join(" ")}`
+                    );
+                    const newList = retry.split(' ').map(s => parseInt(s)).filter(n => !isNaN(n));
+                    // 更新原陣列內容（pickedEnemyIdxList 為 const，但內容可變）
+                    pickedEnemyIdxList.splice(0, pickedEnemyIdxList.length, ...newList);
+                }
             }
 
-            if (!actionSuccess && action !== '5') {
-                console.log('💥 動作失敗！');
-            }
+            const pickedEnemy = pickedEnemyIdxList.map(idx => enemyTeam.getAliveTeamMember()[idx]).filter(member => member !== undefined);
+            console.log(pickedEnemy);
+            const targets = role.pickTarget(pickedEnemy);
+
+            // S3
+            role.nextPhase();
+            role.executeAction(pickedAction, targets);
+
+
+        } else if (role instanceof AI) {
+
         }
 
-        // 主角回合結束處理
-        if (game.map.character.onTurnEnd) {
-            game.map.character.onTurnEnd();
-        }
+        role.resetPhase();
+        roleOrderIdx++;
 
-        // 執行怪物回合
-        if (game.map) {
-            game.map.executeMonsterTurns();
-        }
 
-        // 添加小延遲讓玩家有時間閱讀信息
-        await new Promise(resolve => setTimeout(resolve, 1000));
-    }
-
-    // 遊戲結束，關閉 readline
-    rl.close();
-}
-
-function getDirectionName(direction: number): string {
-    switch (direction) {
-        case 1: return "上 ⬆️";
-        case 2: return "下 ⬇️";
-        case 3: return "左 ⬅️";
-        case 4: return "右 ➡️";
-        default: return "未知";
     }
 }
 
