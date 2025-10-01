@@ -24,17 +24,13 @@ export class PoisonState extends State {
             // 角色死亡時，附加 deBuff，效果是附近的隊友會感染中毒狀態
             role.addDeBuff(new SpreadPositionDeBuff(role));
 
-            // 傳染給隊伍中其他成員
-            role.troop?.team.forEach(member => {
-                if (member.isAlive && member.id !== role.id) {
-                    member.changeState(this);
-                    console.log(`${member.name} 因為 ${role.name} 的死亡而感染中毒狀態！`);
-                }
-            });
+            // 觸發隊友感染中毒狀態
+            role.deBuff?.at(-1)?.onRoleDead(role.troop?.team || []);
 
             // 角色死亡強制歸零回合數
             this.duration = 0;
         }
+
         return role;
     }
 
