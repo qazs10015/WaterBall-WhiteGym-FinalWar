@@ -3,6 +3,7 @@ import { Role } from "./Role";
 
 export abstract class AI extends Role {
     seed: number = 0;
+    protected currentAction: ActionStrategy | null = null;
 
     // 每位 AI 將會存有一個 seed 屬性，初始值為 0，每位AI 依賴自己的 seed 屬性來做各項決策，每次做完一項決策，seed 的值就會＋1。
 
@@ -62,6 +63,7 @@ export abstract class AI extends Role {
     // 覆蓋父類的 pickAction，使用 seed 邏輯
     override pickAction(idx: number): ActionStrategy {
         const action = this.selectActionBySeed();
+        this.currentAction = action; // 儲存當前選擇的行動
         console.log(`${this.name} 選擇行動: ${this.getActionName(action)} (seed: ${this.seed})`);
         return action;
     }
@@ -69,7 +71,20 @@ export abstract class AI extends Role {
     // 覆蓋父類的 pickTarget，使用 seed 邏輯
     override pickTarget(roles: Role[]): Role[] {
         const candidates = this.getCandidateTargets(roles);
-        const targets = this.selectTargetsBySeed(candidates, 1);
+
+        // 使用當前選擇的行動來決定目標數量
+        let targetCount = 1; // 預設值
+        if (this.currentAction) {
+            targetCount = this.currentAction.targetCount;
+
+            // 特殊目標數量處理
+            if (targetCount === -1 || targetCount === -2) {
+                // 火球術(-1)或自爆術(-2)：攻擊所有可選目標
+                targetCount = candidates.length;
+            }
+        }
+
+        const targets = this.selectTargetsBySeed(candidates, targetCount);
         return targets;
     }
 

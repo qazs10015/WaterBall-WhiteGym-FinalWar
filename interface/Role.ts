@@ -1,4 +1,5 @@
 
+import { Troop } from "../class/Troop";
 import { NormalState } from "../roleState/temporarily/NormalState";
 import { ActionStrategy } from "./ActionStrategy";
 import { DeBuff } from "./Debuff";
@@ -15,6 +16,8 @@ export abstract class Role {
     deBuff: DeBuff[];
     phase: number;
     isAlive: boolean;
+
+    troop: Troop | null = null;
 
     constructor(
         id: number,

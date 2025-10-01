@@ -94,15 +94,21 @@ export class RPG {
 
         this.team1 = new Troop();
         this.team1.addNewTeamMember(hero);
-        this.team1.generateTeamMember(5);
+        this.team1.generateTeamMember(5, '軍隊1-');
 
         console.log(`隊伍1 成員: ${this.team1.team.map(member => member.name).join(", ")}`);
+
+        // 傳入隊員資訊
+        this.team1.team.forEach((member) => member.troop = this.team1);
     }
 
     private generateTeam2() {
         this.team2 = new Troop();
-        this.team2.generateTeamMember(5);
+        this.team2.generateTeamMember(5, '軍隊2-');
 
         console.log(`隊伍2 成員: ${this.team2.team.map(member => member.name).join(", ")}`);
+
+        // 傳入隊員資訊
+        this.team2.team.forEach((member) => member.troop = this.team2);
     }
 }

@@ -8,13 +8,13 @@ export class Troop {
     constructor() {
     }
 
-    generateTeamMember(number: number): Role[] {
+    generateTeamMember(number: number, prefix: string): Role[] {
         const members: Role[] = [];
         for (let i = this.team.length; i < number; i++) {
             // 創建 Player 實例而不是抽象的 Role
             const member = new Player(
                 i + 1,                  // id
-                `角色${i + 1}`,         // name
+                `${prefix}角色${i + 1}`,         // name
                 500,                    // hp
                 300,                    // mp
                 50,                     // str

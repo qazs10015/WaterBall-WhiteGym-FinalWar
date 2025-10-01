@@ -27,4 +27,9 @@ export abstract class State {
         // Implement action logic here
         return true;
     }
+
+    onTurnEnd(state: State, role: Role): Role {
+        // Implement turn end logic here
+        return role;
+    }
 }
