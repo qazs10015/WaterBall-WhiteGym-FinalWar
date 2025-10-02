@@ -157,6 +157,8 @@ async function main() {
 
                 }
 
+            } else {
+                console.log(`${role.name} 目前狀態為 ${role.roleState.name}，無法行動。`);
             }
 
 
