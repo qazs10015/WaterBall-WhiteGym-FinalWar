@@ -16,7 +16,9 @@ export class SummonStrategy implements ActionStrategy {
             throw new Error("MP 不足，無法召喚");
         }
 
-        return [this.summonSlime()];
+        self.troop?.addNewTeamMember(this.summonSlime());
+
+        return [self];
     }
 
     private summonSlime(): Role {
