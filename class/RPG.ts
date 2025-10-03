@@ -60,11 +60,24 @@ export class RPG {
 
         // 檢查隊伍1是否有存活成員
         const team1Alive = this.team1?.getAliveTeamMember().length || 0;
+
+        if (!team1Alive) {
+            console.log("隊伍1已被殲滅，敵方獲勝，遊戲結束！");
+        }
+
         // 檢查隊伍2是否有存活成員  
         const team2Alive = this.team2?.getAliveTeamMember().length || 0;
 
+        if (!team2Alive) {
+            console.log("隊伍2已被殲滅，我方獲勝，遊戲結束！");
+        }
+
         // 檢查英雄是否死亡（假設英雄是隊伍1的第一個成員）
         const heroAlive = this.team1?.team[0]?.isAlive || false;
+
+        if (!heroAlive) {
+            console.log("英雄已死亡，遊戲結束！");
+        }
 
         return !heroAlive || team1Alive === 0 || team2Alive === 0;
     }
