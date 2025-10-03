@@ -10,8 +10,8 @@ describe('Slime', () => {
 
     test('應該正確初始化史萊姆屬性', () => {
         expect(slime.name).toBe('史萊姆');
-        expect(slime.hp).toBe(100);
-        expect(slime.mp).toBe(0);
+        expect(slime.hp).toBe(200);
+        expect(slime.mp).toBe(300);
         expect(slime.str).toBe(50);
         expect(slime.isAlive).toBe(true);
         expect(slime.seed).toBe(0);
@@ -21,13 +21,13 @@ describe('Slime', () => {
         const damage = 30;
         const remainingHp = slime.defense(damage);
 
-        expect(slime.hp).toBe(70);
-        expect(remainingHp).toBe(70);
+        expect(slime.hp).toBe(170);
+        expect(remainingHp).toBe(170);
         expect(slime.isAlive).toBe(true);
     });
 
     test('當 HP 降到 0 或以下時應該死亡', () => {
-        const damage = 150; // 超過史萊姆的 HP
+        const damage = 250; // 超過史萊姆的 HP (200)
         slime.defense(damage);
 
         expect(slime.hp).toBe(0);
@@ -35,7 +35,7 @@ describe('Slime', () => {
     });
 
     test('應該返回正確的可用技能', () => {
-        const skills = (slime as any).getAvailableSkills();
+        const skills = (slime as any).getAvailableActions();
         expect(Array.isArray(skills)).toBe(true);
         expect(skills).toEqual(slime.skill);
     });
@@ -48,10 +48,16 @@ describe('Slime', () => {
         expect(candidates).toEqual(roles); // 包含所有角色
     });
 
-    test('應該能執行任何行動', () => {
-        // 由於 canExecuteAction 總是返回 true
-        const canExecute = (slime as any).canExecuteAction({});
-        expect(canExecute).toBe(true);
+    test('應該能檢查行動是否可執行', () => {
+        // 測試有足夠 MP 的行動
+        const basicAttack = { mpCost: 0 };
+        const canExecuteBasic = (slime as any).canExecuteAction(basicAttack);
+        expect(canExecuteBasic).toBe(true);
+
+        // 測試 MP 不足的行動
+        const expensiveAction = { mpCost: 500 };
+        const canExecuteExpensive = (slime as any).canExecuteAction(expensiveAction);
+        expect(canExecuteExpensive).toBe(false);
     });
 
     test('seed 屬性應該正確初始化', () => {

@@ -15,7 +15,7 @@ describe('Troop', () => {
     });
 
     test('應該能生成指定數量的團隊成員', () => {
-        const members = troop.generateTeamMember(3);
+        const members = troop.generateTeamMember(3, '測試');
 
         expect(members).toHaveLength(3);
         expect(troop.team).toHaveLength(3);
@@ -23,7 +23,7 @@ describe('Troop', () => {
         // 檢查每個成員的屬性
         members.forEach((member, index) => {
             expect(member.id).toBe(index + 1);
-            expect(member.name).toBe(`角色${index + 1}`);
+            expect(member.name).toBe(`測試角色${index + 1}`);
             expect(member.hp).toBe(500);
             expect(member.mp).toBe(300);
             expect(member.str).toBe(50);
@@ -33,11 +33,11 @@ describe('Troop', () => {
 
     test('應該能在現有團隊基礎上增加成員', () => {
         // 先生成 2 個成員
-        troop.generateTeamMember(2);
+        troop.generateTeamMember(2, '測試');
         expect(troop.team).toHaveLength(2);
 
         // 再生成到 5 個成員
-        const newMembers = troop.generateTeamMember(5);
+        const newMembers = troop.generateTeamMember(5, '測試');
         expect(newMembers).toHaveLength(3); // 只新增了 3 個
         expect(troop.team).toHaveLength(5); // 總共 5 個
 
@@ -58,7 +58,7 @@ describe('Troop', () => {
 
     test('應該能正確篩選存活的團隊成員', () => {
         // 生成一些成員
-        troop.generateTeamMember(3);
+        troop.generateTeamMember(3, '測試');
 
         // 讓一個成員死亡
         troop.team[1].hp = 0;
@@ -73,7 +73,7 @@ describe('Troop', () => {
     });
 
     test('當所有成員都死亡時應該返回空陣列', () => {
-        troop.generateTeamMember(2);
+        troop.generateTeamMember(2, '測試');
 
         // 讓所有成員死亡
         troop.team.forEach(member => {
